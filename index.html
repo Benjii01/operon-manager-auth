@@ -27,11 +27,13 @@
     <div class="logo">Operon Manager</div>
     <div class="subtitle">Account Portal</div>
 
+    <!-- Email confirmed view -->
     <div id="confirmed">
       <div class="success">Email confirmed</div>
       <div class="sub">Your email has been verified. You can now log in to the app.</div>
     </div>
 
+    <!-- Password reset form -->
     <div id="reset-form">
       <div class="message">Set a new password</div>
       <div class="sub" style="margin-bottom:20px;">Enter a new password for your account.</div>
@@ -41,6 +43,7 @@
       <div class="err" id="reset-err"></div>
     </div>
 
+    <!-- Error state -->
     <div id="error-state">
       <div class="message">Something went wrong</div>
       <div class="sub" id="error-msg">This link may have expired. Contact your administrator.</div>
@@ -54,12 +57,14 @@
     const sb = supabase.createClient(_OU, _OK);
 
     async function init() {
-      const hash = window.location.hash.substring(1);
-      const params = new URLSearchParams(hash);
-      const type = params.get('type');
-      const accessToken = params.get('access_token');
-      const refreshToken = params.get('refresh_token');
-      const errorDesc = params.get('error_description');
+      const hashParams = new URLSearchParams(window.location.hash.substring(1));
+      const queryParams = new URLSearchParams(window.location.search);
+
+      const errorDesc = hashParams.get('error_description') || queryParams.get('error_description');
+      const code = queryParams.get('code');
+      const type = hashParams.get('type') || queryParams.get('type');
+      const accessToken = hashParams.get('access_token');
+      const refreshToken = hashParams.get('refresh_token');
 
       if (errorDesc) {
         document.getElementById('error-state').style.display = 'block';
@@ -67,6 +72,24 @@
         return;
       }
 
+      // PKCE flow — Supabase sends ?code= in query string
+      if (code) {
+        try {
+          await sb.auth.exchangeCodeForSession(code);
+          if (type === 'signup' || type === 'email_confirmation') {
+            document.getElementById('confirmed').style.display = 'block';
+          } else {
+            document.getElementById('reset-form').querySelector('.message').textContent = 'Set your password';
+            document.getElementById('reset-form').style.display = 'block';
+          }
+        } catch(e) {
+          document.getElementById('error-state').style.display = 'block';
+          document.getElementById('error-msg').textContent = e.message || 'This link may have expired. Contact your administrator.';
+        }
+        return;
+      }
+
+      // Implicit flow — tokens in hash
       if (type === 'signup' || type === 'email_confirmation') {
         document.getElementById('confirmed').style.display = 'block';
         return;
