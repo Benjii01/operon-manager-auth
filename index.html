@@ -27,13 +27,11 @@
     <div class="logo">Operon Manager</div>
     <div class="subtitle">Account Portal</div>
 
-    <!-- Email confirmed view -->
     <div id="confirmed">
       <div class="success">Email confirmed</div>
       <div class="sub">Your email has been verified. You can now log in to the app.</div>
     </div>
 
-    <!-- Password reset form -->
     <div id="reset-form">
       <div class="message">Set a new password</div>
       <div class="sub" style="margin-bottom:20px;">Enter a new password for your account.</div>
@@ -43,7 +41,6 @@
       <div class="err" id="reset-err"></div>
     </div>
 
-    <!-- Error state -->
     <div id="error-state">
       <div class="message">Something went wrong</div>
       <div class="sub" id="error-msg">This link may have expired. Contact your administrator.</div>
@@ -75,8 +72,9 @@
         return;
       }
 
-      if (type === 'recovery' && accessToken) {
+      if ((type === 'recovery' || type === 'invite') && accessToken) {
         await sb.auth.setSession({ access_token: accessToken, refresh_token: refreshToken });
+        document.getElementById('reset-form').querySelector('.message').textContent = type === 'invite' ? 'Set your password' : 'Set a new password';
         document.getElementById('reset-form').style.display = 'block';
         return;
       }
